@@ -1,62 +1,27 @@
-﻿using System.ComponentModel;
 using System.Windows;
 using System.Windows.Media;
 
 namespace ImageParticleSimulatorWPF.Models
 {
-    public class Ball : INotifyPropertyChanged
+    public class Ball
     {
-        private Point _position;
-        public Point Position
-        {
-            get => _position;
-            set
-            {
-                _position = value;
-                OnPropertyChanged(nameof(Position));
-            }
-        }
+        public Point Position { get; set; }
 
-        private Vector _velocity;
-        public Vector Velocity
-        {
-            get => _velocity;
-            set
-            {
-                _velocity = value;
-                OnPropertyChanged(nameof(Velocity));
-            }
-        }
+        public Vector Velocity { get; set; }
 
         public Vector FiredVelocity { get; set; }
 
-        private double _radius = 5;
-        public double Radius
+        public double Radius { get; set; } = 5;
+
+        public Color Color { get; set; } = Colors.White;
+
+        public void Reset(Point position, Vector velocity, double radius, Color color)
         {
-            get => _radius;
-            set
-            {
-                _radius = value;
-                OnPropertyChanged(nameof(Radius));
-            }
+            Position = position;
+            Velocity = velocity;
+            FiredVelocity = velocity;
+            Radius = radius;
+            Color = color;
         }
-
-        private Color _color = Colors.White;
-        public Color Color
-        {
-            get => _color;
-            set
-            {
-                _color = value;
-                OnPropertyChanged(nameof(Color));
-                OnPropertyChanged(nameof(Brush));
-            }
-        }
-
-        public SolidColorBrush Brush => new SolidColorBrush(Color);
-
-        public event PropertyChangedEventHandler? PropertyChanged;
-        private void OnPropertyChanged(string propertyName) =>
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 }

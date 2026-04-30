@@ -12,8 +12,9 @@ namespace ImageParticleSimulatorWPF.Views
 
             Loaded += (s, e) =>
             {
-                var viewModel = new SimulationViewModel(BallCanvas.ActualWidth, BallCanvas.ActualHeight, 1150, image);
+                var viewModel = new SimulationViewModel(BallCanvas.ActualWidth, BallCanvas.ActualHeight, 1790, image);
                 viewModel.OnOverlayFadeRequest = OverlayFadeOut;
+                viewModel.OnFrameUpdated = () => BallCanvas.InvalidateVisual();
                 Overlay.Opacity = 0;
                 Overlay.Visibility = Visibility.Visible;
 
