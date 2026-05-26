@@ -3,9 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:views="clr-namespace:ImageParticleSimulatorWPF.Views"
         Title="Beauty in Chaos"
-        Background="#09090b"
-        MinWidth="360"
-        MinHeight="300"
+        Height="320"
+        Width="300"
         WindowStartupLocation="CenterScreen">
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis" />
@@ -20,8 +19,10 @@
         </Storyboard>
     </Window.Resources>
 
-    <Grid Margin="14">
+    <Grid>
         <views:ParticleCanvas x:Name="BallCanvas"
+                              Width="300"
+                              Height="300"
                               HorizontalAlignment="Center"
                               VerticalAlignment="Top"
                               Balls="{Binding Balls}"

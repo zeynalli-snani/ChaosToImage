@@ -16,7 +16,7 @@ public class BallData
 
 public class SimulationViewModel : INotifyPropertyChanged
 {
-    private const double BallRadius = 4.0;
+    private const double AreaFillRatio = 0.72;
     private const int CollisionPasses = 3;
 
     private readonly List<Ball> _balls;
@@ -26,6 +26,7 @@ public class SimulationViewModel : INotifyPropertyChanged
     private readonly Point _center;
     private readonly double _width;
     private readonly double _height;
+    private readonly double _ballRadius;
     private readonly BitmapImage _image;
     private readonly List<BallData> _recordedData = new();
 
@@ -75,6 +76,7 @@ public class SimulationViewModel : INotifyPropertyChanged
         _image = image;
         _center = new Point(width / 2, height / 2);
         _totalBallsToFire = ballCount;
+        _ballRadius = CalculateBallRadius(ballCount);
         _balls = new List<Ball>(ballCount);
 
         for (int i = 0; i < ballCount; i++)
@@ -147,7 +149,7 @@ public class SimulationViewModel : INotifyPropertyChanged
         Vector velocity = new Vector(Math.Cos(angle), Math.Sin(angle)) * speed;
 
         Ball ball = _balls[_ballsFired];
-        ball.Reset(_center, velocity, BallRadius, Colors.White);
+        ball.Reset(_center, velocity, _ballRadius, Colors.White);
         ActiveBallCount = Math.Max(ActiveBallCount, _ballsFired + 1);
     }
 
@@ -208,7 +210,7 @@ public class SimulationViewModel : INotifyPropertyChanged
             BallData data = _recordedData[_ballsFired];
             Ball ball = _balls[_ballsFired];
 
-            ball.Reset(_center, data.InitialVelocity, BallRadius, data.Color);
+            ball.Reset(_center, data.InitialVelocity, _ballRadius, data.Color);
             _ballsFired++;
         }
 
@@ -286,6 +288,13 @@ public class SimulationViewModel : INotifyPropertyChanged
                 }
             }
         }
+    }
+
+    private double CalculateBallRadius(int ballCount)
+    {
+        double usableArea = _width * _height * AreaFillRatio;
+        double radius = Math.Sqrt(usableArea / (Math.Max(ballCount, 1) * Math.PI));
+        return Math.Clamp(radius, 1.2, 12.0);
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
