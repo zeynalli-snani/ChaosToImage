@@ -1,140 +1,281 @@
-﻿<UserControl x:Class="ImageParticleSimulatorWPF.Views.MainView"
+<UserControl x:Class="ImageParticleSimulatorWPF.Views.MainView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:ImageParticleSimulatorWPF.Views"
              xmlns:viewmodels="clr-namespace:ImageParticleSimulatorWPF.ViewModels"
-             mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="800"
-             Background="#1e1e1e">
+             mc:Ignorable="d"
+             d:DesignHeight="620" d:DesignWidth="960"
+             Background="#111318">
     <UserControl.Resources>
         <viewmodels:NullToBoolConverter x:Key="NullToBoolConverter"/>
 
-        <!-- Button Style -->
         <Style TargetType="Button" x:Key="FancyButton">
-            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="FontSize" Value="15"/>
             <Setter Property="Foreground" Value="White"/>
-            <Setter Property="Background" Value="#3b82f6"/>
-            <Setter Property="Padding" Value="10 5"/>
-            <Setter Property="Margin" Value="0 5"/>
+            <Setter Property="Background" Value="#2563eb"/>
+            <Setter Property="Padding" Value="14 10"/>
             <Setter Property="BorderBrush" Value="Transparent"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Effect">
                 <Setter.Value>
-                    <DropShadowEffect BlurRadius="8" Color="Black" Opacity="0.4"/>
+                    <DropShadowEffect BlurRadius="10" Color="Black" Opacity="0.32"/>
                 </Setter.Value>
             </Setter>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border Background="{TemplateBinding Background}"
-                                CornerRadius="8">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                CornerRadius="10">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
                         </Border>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#2563eb"/>
+                    <Setter Property="Background" Value="#1d4ed8"/>
                 </Trigger>
                 <Trigger Property="IsPressed" Value="True">
-                    <Setter Property="Background" Value="#1d4ed8"/>
+                    <Setter Property="Background" Value="#1e40af"/>
+                </Trigger>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Background" Value="#334155"/>
+                    <Setter Property="Foreground" Value="#cbd5e1"/>
                 </Trigger>
             </Style.Triggers>
         </Style>
     </UserControl.Resources>
-    
-    <!-- Fade-in animation -->
+
     <UserControl.Triggers>
         <EventTrigger RoutedEvent="Loaded">
             <BeginStoryboard>
                 <Storyboard>
                     <DoubleAnimation Storyboard.TargetProperty="Opacity"
-                                 From="0" To="1" Duration="0:0:0.5"/>
+                                     From="0" To="1" Duration="0:0:0.45"/>
                 </Storyboard>
             </BeginStoryboard>
         </EventTrigger>
     </UserControl.Triggers>
 
     <Grid>
-        <Border Width="400"
-                Background="#2d2d2d"
-                Padding="30"
-                CornerRadius="16"
-                HorizontalAlignment="Center"
-                VerticalAlignment="Center">
+        <Grid.Background>
+            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="#0b1120" Offset="0"/>
+                <GradientStop Color="#111827" Offset="0.55"/>
+                <GradientStop Color="#1f2937" Offset="1"/>
+            </LinearGradientBrush>
+        </Grid.Background>
+
+        <Border Margin="28"
+                Padding="28"
+                Background="#DD161B22"
+                BorderBrush="#223041"
+                BorderThickness="1"
+                CornerRadius="22">
             <Border.Effect>
-                <DropShadowEffect BlurRadius="12"
-                          ShadowDepth="4"
-                          Opacity="0.4"
-                          Color="Black"/>
+                <DropShadowEffect BlurRadius="26"
+                                  ShadowDepth="0"
+                                  Opacity="0.35"
+                                  Color="Black"/>
             </Border.Effect>
-            <StackPanel HorizontalAlignment="Center">
-                <TextBlock Text="🎇 Image Particle Simulator"
-                           FontSize="22"
-                           FontWeight="Bold"
-                           Foreground="White"
-                           Margin="0 0 0 10"
-                           TextAlignment="Center"/>
-                <TextBlock Text="Upload an image and watch it come to life out of pure Chaos!"
-                           FontSize="12"
-                           Foreground="LightGray"
-                           Margin="0 0 0 20"
-                           TextAlignment="Center"/>
 
-                <Border Width="280"
-                        Margin="0 0 0 18"
-                        Padding="16"
-                        Background="#383838"
-                        CornerRadius="12">
-                    <StackPanel>
-                        <TextBlock Text="Particle Count"
-                                   FontSize="14"
-                                   FontWeight="SemiBold"
-                                   Foreground="White"/>
-                        <TextBlock Text="Higher counts make the final image denser, but take more work to animate."
-                                   Margin="0 4 0 12"
-                                   TextWrapping="Wrap"
-                                   Foreground="#c9c9c9"
-                                   FontSize="11"/>
-                        <Slider Minimum="300"
-                                Maximum="5000"
-                                TickFrequency="100"
-                                Value="{Binding BallCount, Mode=TwoWay}"
-                                Foreground="#60a5fa"/>
-                        <DockPanel Margin="0 10 0 0">
-                            <TextBlock Text="Selected:"
-                                       Foreground="#c9c9c9"
-                                       VerticalAlignment="Center"/>
-                            <Border DockPanel.Dock="Right"
-                                    Padding="10 4"
-                                    Background="#1f2937"
-                                    CornerRadius="999">
-                                <TextBlock Text="{Binding BallCount}"
-                                           Foreground="White"
-                                           FontWeight="SemiBold"/>
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <StackPanel Margin="0 0 0 24">
+                    <TextBlock Text="Image Particle Simulator"
+                               FontSize="28"
+                               FontWeight="Bold"
+                               Foreground="White"/>
+                    <TextBlock Text="Upload an image, tune the particle count, and launch a smoother animation without hunting for hidden buttons."
+                               Margin="0 8 0 0"
+                               FontSize="13"
+                               Foreground="#cbd5e1"
+                               TextWrapping="Wrap"/>
+                </StackPanel>
+
+                <Grid Grid.Row="1">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="1.2*"/>
+                        <ColumnDefinition Width="0.95*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Border Grid.Column="0"
+                            Margin="0 0 18 0"
+                            Padding="20"
+                            Background="#B3121820"
+                            CornerRadius="18">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <DockPanel Margin="0 0 0 14">
+                                <TextBlock Text="Preview"
+                                           FontSize="18"
+                                           FontWeight="SemiBold"
+                                           Foreground="White"/>
+                                <Border DockPanel.Dock="Right"
+                                        Padding="10 4"
+                                        Background="#1e293b"
+                                        CornerRadius="999">
+                                    <TextBlock Text="{Binding BallCount, StringFormat={}Particles: {0}}"
+                                               Foreground="#dbeafe"
+                                               FontSize="12"
+                                               FontWeight="SemiBold"/>
+                                </Border>
+                            </DockPanel>
+
+                            <Border Grid.Row="1"
+                                    Background="#0b0f14"
+                                    BorderBrush="#263341"
+                                    BorderThickness="1"
+                                    CornerRadius="16"
+                                    Padding="18">
+                                <Grid>
+                                    <Image Source="{Binding UploadedImage}"
+                                           Stretch="Uniform"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"/>
+                                    <StackPanel HorizontalAlignment="Center"
+                                                VerticalAlignment="Center"
+                                                Visibility="Collapsed">
+                                        <StackPanel.Style>
+                                            <Style TargetType="StackPanel">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding UploadedImage}" Value="{x:Null}">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </StackPanel.Style>
+                                        <TextBlock Text="No image selected yet"
+                                                   Foreground="#94a3b8"
+                                                   FontSize="18"
+                                                   FontWeight="SemiBold"
+                                                   HorizontalAlignment="Center"/>
+                                        <TextBlock Text="Pick a JPG or PNG to preview it here before running the animation."
+                                                   Margin="0 8 0 0"
+                                                   Foreground="#64748b"
+                                                   FontSize="12"
+                                                   TextAlignment="Center"
+                                                   TextWrapping="Wrap"
+                                                   Width="280"/>
+                                    </StackPanel>
+                                </Grid>
                             </Border>
-                        </DockPanel>
-                    </StackPanel>
-                </Border>
+                        </Grid>
+                    </Border>
 
-                <Button Content="Upload Image"
-                        Command="{Binding UploadImageCommand}"
-                        Style="{StaticResource FancyButton}"
-                        Width="200"/>
-                <Image Source="{Binding UploadedImage}"
-                       Width="200"
-                       Height="200"
-                       Stretch="Uniform"
-                       Margin="0 10"/>
-                <Button Content="Start Simulation"
-                        Command="{Binding StartSimulationCommand}"
-                        Style="{StaticResource FancyButton}"
-                        IsEnabled="{Binding UploadedImage, Converter={StaticResource NullToBoolConverter}}"
-                        Width="200"/>
-            </StackPanel>
+                    <Border Grid.Column="1"
+                            Padding="20"
+                            Background="#B3121820"
+                            CornerRadius="18">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                          HorizontalScrollBarVisibility="Disabled">
+                                <StackPanel>
+                                    <TextBlock Text="Settings"
+                                               FontSize="18"
+                                               FontWeight="SemiBold"
+                                               Foreground="White"/>
+
+                                    <Border Margin="0 18 0 0"
+                                            Padding="18"
+                                            Background="#1f2937"
+                                            CornerRadius="14">
+                                        <StackPanel>
+                                            <TextBlock Text="Particle Count"
+                                                       FontSize="15"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="White"/>
+                                            <TextBlock Text="More particles improve image detail. Lower values stay lighter and can record more smoothly on weaker machines."
+                                                       Margin="0 6 0 12"
+                                                       TextWrapping="Wrap"
+                                                       Foreground="#cbd5e1"
+                                                       FontSize="12"/>
+                                            <Slider Minimum="300"
+                                                    Maximum="5000"
+                                                    TickFrequency="100"
+                                                    IsSnapToTickEnabled="False"
+                                                    Value="{Binding BallCount, Mode=TwoWay}"
+                                                    Foreground="#60a5fa"/>
+                                            <DockPanel Margin="0 12 0 0">
+                                                <TextBlock Text="Recommended: 1200-2200"
+                                                           Foreground="#94a3b8"
+                                                           FontSize="11"
+                                                           VerticalAlignment="Center"/>
+                                                <Border DockPanel.Dock="Right"
+                                                        Padding="12 5"
+                                                        Background="#0f172a"
+                                                        CornerRadius="999">
+                                                    <TextBlock Text="{Binding BallCount}"
+                                                               Foreground="White"
+                                                               FontWeight="SemiBold"/>
+                                                </Border>
+                                            </DockPanel>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <Border Margin="0 16 0 0"
+                                            Padding="18"
+                                            Background="#1f2937"
+                                            CornerRadius="14">
+                                        <StackPanel>
+                                            <TextBlock Text="Flow"
+                                                       FontSize="15"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="White"/>
+                                            <TextBlock Text="1. Upload your image&#x0a;2. Adjust particle count&#x0a;3. Start the simulation"
+                                                       Margin="0 8 0 0"
+                                                       Foreground="#cbd5e1"
+                                                       FontSize="12"/>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+                            </ScrollViewer>
+
+                            <Border Grid.Row="1"
+                                    Margin="0 18 0 0"
+                                    Padding="16"
+                                    Background="#0f172a"
+                                    CornerRadius="14">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <Button Grid.Column="0"
+                                            Margin="0 0 8 0"
+                                            Content="Upload Image"
+                                            Command="{Binding UploadImageCommand}"
+                                            Style="{StaticResource FancyButton}"/>
+                                    <Button Grid.Column="1"
+                                            Margin="8 0 0 0"
+                                            Content="Start Simulation"
+                                            Command="{Binding StartSimulationCommand}"
+                                            Style="{StaticResource FancyButton}"
+                                            IsEnabled="{Binding UploadedImage, Converter={StaticResource NullToBoolConverter}}"/>
+                                </Grid>
+                            </Border>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </Grid>
         </Border>
     </Grid>
 </UserControl>
