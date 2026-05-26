@@ -5,291 +5,379 @@ using System.ComponentModel;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Threading;
 
-public class BallData
+namespace ImageParticleSimulatorWPF.ViewModels
 {
-    public Vector InitialVelocity { get; set; }
-    public Color Color { get; set; }
-    public Point FinalPosition { get; set; }
-}
-
-public class SimulationViewModel : INotifyPropertyChanged
-{
-    private const double BallRadius = 4.0;
-    private const int CollisionPasses = 3;
-
-    private readonly List<Ball> _balls;
-    private readonly DispatcherTimer _timer;
-    private readonly DispatcherTimer _stopTimer;
-    private readonly Random _rand = new();
-    private readonly Point _center;
-    private readonly double _width;
-    private readonly double _height;
-    private readonly BitmapImage _image;
-    private readonly List<BallData> _recordedData = new();
-
-    private bool _stopTimerStarted;
-    private int _totalBallsToFire;
-    private int _ballsFired;
-    private int _spawnTickCounter = 1;
-    private bool _isRecordingPhase = true;
-    private int _activeBallCount;
-    private bool _isOverlayVisible = true;
-
-    public IReadOnlyList<Ball> Balls => _balls;
-
-    public int ActiveBallCount
+    internal sealed class ParticleTarget
     {
-        get => _activeBallCount;
-        private set
-        {
-            if (_activeBallCount != value)
-            {
-                _activeBallCount = value;
-                OnPropertyChanged(nameof(ActiveBallCount));
-            }
-        }
+        public required Color Color { get; init; }
+        public required Point Position { get; init; }
     }
 
-    public bool IsOverlayVisible
+    internal enum SimulationPhase
     {
-        get => _isOverlayVisible;
-        set
-        {
-            if (_isOverlayVisible != value)
-            {
-                _isOverlayVisible = value;
-                OnPropertyChanged(nameof(IsOverlayVisible));
-            }
-        }
+        Scatter,
+        Assemble,
+        Settled
     }
 
-    public Action? OnOverlayFadeRequest;
-    public Action? OnFrameUpdated;
-
-    public SimulationViewModel(double width, double height, int ballCount, BitmapImage image)
+    public class SimulationViewModel : INotifyPropertyChanged
     {
-        _width = width;
-        _height = height;
-        _image = image;
-        _center = new Point(width / 2, height / 2);
-        _totalBallsToFire = ballCount;
-        _balls = new List<Ball>(ballCount);
+        private const double ScatterDuration = 2.4;
+        private const double SpawnDuration = 1.15;
+        private const double BoundaryBounce = 0.92;
+        private const double ScatterDrag = 1.55;
+        private const double AssembleSpring = 14.0;
+        private const double AssembleDrag = 8.0;
+        private const int CollisionPasses = 2;
 
-        for (int i = 0; i < ballCount; i++)
+        private readonly List<Ball> _balls;
+        private readonly List<ParticleTarget> _targets;
+        private readonly Random _random = new();
+        private readonly Point _center;
+        private readonly double _width;
+        private readonly double _height;
+        private readonly double _ballRadius;
+
+        private SimulationPhase _phase = SimulationPhase.Scatter;
+        private double _phaseElapsed;
+        private double _spawnAccumulator;
+        private bool _overlayFadeRequested;
+        private int _activeBallCount;
+        private bool _isOverlayVisible = true;
+        private double _currentFps = 60.0;
+
+        public IReadOnlyList<Ball> Balls => _balls;
+
+        public int ActiveBallCount
         {
-            _balls.Add(new Ball());
-        }
-
-        _timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
-        _timer.Tick += Tick;
-        _timer.Start();
-
-        _stopTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
-        _stopTimer.Tick += StopTimerTick;
-    }
-
-    private void Tick(object? sender, EventArgs e)
-    {
-        if (_isRecordingPhase)
-        {
-            for (int i = 0; i < _spawnTickCounter && _ballsFired < _totalBallsToFire; i++)
+            get => _activeBallCount;
+            private set
             {
-                FireNewBall();
-                _ballsFired++;
-            }
-
-            _spawnTickCounter++;
-            UpdateBalls();
-
-            if (_ballsFired >= _totalBallsToFire && !_stopTimerStarted)
-            {
-                _stopTimerStarted = true;
-                _stopTimer.Start();
-            }
-        }
-        else
-        {
-            ReplayBalls();
-            UpdateBalls();
-
-            if (_ballsFired >= _recordedData.Count && !_stopTimerStarted)
-            {
-                _stopTimerStarted = true;
-                _stopTimer.Start();
+                if (_activeBallCount != value)
+                {
+                    _activeBallCount = value;
+                    OnPropertyChanged(nameof(ActiveBallCount));
+                }
             }
         }
 
-        OnFrameUpdated?.Invoke();
-    }
-
-    private void StopTimerTick(object? sender, EventArgs e)
-    {
-        _stopTimer.Stop();
-
-        if (_isRecordingPhase)
+        public bool IsOverlayVisible
         {
-            AssignColorsFromImage();
-            PrepareReplay();
-        }
-        else
-        {
-            _timer.Stop();
-        }
-    }
-
-    private void FireNewBall()
-    {
-        double angle = _rand.NextDouble() * 2 * Math.PI;
-        double progress = (double)_ballsFired / _totalBallsToFire;
-        double speed = 18.0 * (1.0 - progress) + 2.0 * progress;
-        Vector velocity = new Vector(Math.Cos(angle), Math.Sin(angle)) * speed;
-
-        Ball ball = _balls[_ballsFired];
-        ball.Reset(_center, velocity, BallRadius, Colors.White);
-        ActiveBallCount = Math.Max(ActiveBallCount, _ballsFired + 1);
-    }
-
-    private void AssignColorsFromImage()
-    {
-        WriteableBitmap writableBitmap = new(_image);
-        int stride = writableBitmap.PixelWidth * (writableBitmap.Format.BitsPerPixel / 8);
-        byte[] pixels = new byte[writableBitmap.PixelHeight * stride];
-        writableBitmap.CopyPixels(pixels, stride, 0);
-
-        _recordedData.Clear();
-
-        for (int i = 0; i < ActiveBallCount; i++)
-        {
-            Ball ball = _balls[i];
-            double normalizedX = Math.Clamp(ball.Position.X / _width, 0, 1);
-            double normalizedY = Math.Clamp(ball.Position.Y / _height, 0, 1);
-
-            int imageX = (int)(normalizedX * (writableBitmap.PixelWidth - 1));
-            int imageY = (int)(normalizedY * (writableBitmap.PixelHeight - 1));
-            int pixelIndex = imageY * stride + imageX * 4;
-
-            Color color = Colors.White;
-            if (pixelIndex + 3 < pixels.Length)
+            get => _isOverlayVisible;
+            private set
             {
-                byte b = pixels[pixelIndex];
-                byte g = pixels[pixelIndex + 1];
-                byte r = pixels[pixelIndex + 2];
-                byte a = pixels[pixelIndex + 3];
+                if (_isOverlayVisible != value)
+                {
+                    _isOverlayVisible = value;
+                    OnPropertyChanged(nameof(IsOverlayVisible));
+                }
+            }
+        }
 
-                color = Color.FromArgb(a, r, g, b);
+        public double CurrentFps
+        {
+            get => _currentFps;
+            private set
+            {
+                if (Math.Abs(_currentFps - value) > 0.1)
+                {
+                    _currentFps = value;
+                    OnPropertyChanged(nameof(CurrentFps));
+                }
+            }
+        }
+
+        public Action? OnOverlayFadeRequest;
+        public Action? OnSimulationCompleted;
+
+        public SimulationViewModel(double width, double height, int ballCount, BitmapImage image)
+        {
+            _width = Math.Max(width, 1);
+            _height = Math.Max(height, 1);
+            _center = new Point(_width / 2, _height / 2);
+            _ballRadius = CalculateBallRadius(ballCount);
+            _targets = BuildTargets(image, ballCount);
+            _balls = new List<Ball>(_targets.Count);
+
+            for (int i = 0; i < _targets.Count; i++)
+            {
+                _balls.Add(new Ball());
+            }
+        }
+
+        public void UpdateFrame(double deltaTime)
+        {
+            if (_phase == SimulationPhase.Settled)
+            {
+                return;
             }
 
-            _recordedData.Add(new BallData
+            double dt = Math.Clamp(deltaTime, 1.0 / 240.0, 0.05);
+            UpdateFps(dt);
+
+            switch (_phase)
             {
-                InitialVelocity = ball.FiredVelocity,
-                FinalPosition = ball.Position,
-                Color = color
-            });
-        }
-    }
-
-    private void PrepareReplay()
-    {
-        IsOverlayVisible = false;
-        OnOverlayFadeRequest?.Invoke();
-        _isRecordingPhase = false;
-        _ballsFired = 0;
-        _stopTimerStarted = false;
-        _spawnTickCounter = 1;
-        ActiveBallCount = 0;
-    }
-
-    private void ReplayBalls()
-    {
-        for (int i = 0; i < _spawnTickCounter && _ballsFired < _recordedData.Count; i++)
-        {
-            BallData data = _recordedData[_ballsFired];
-            Ball ball = _balls[_ballsFired];
-
-            ball.Reset(_center, data.InitialVelocity, BallRadius, data.Color);
-            _ballsFired++;
+                case SimulationPhase.Scatter:
+                    UpdateScatter(dt);
+                    break;
+                case SimulationPhase.Assemble:
+                    UpdateAssemble(dt);
+                    break;
+            }
         }
 
-        ActiveBallCount = Math.Max(ActiveBallCount, _ballsFired);
-        _spawnTickCounter++;
-    }
-
-    private void UpdateBalls()
-    {
-        for (int i = 0; i < ActiveBallCount; i++)
+        private void UpdateScatter(double dt)
         {
-            Ball ball = _balls[i];
+            _phaseElapsed += dt;
+            SpawnBalls(dt);
+            RunScatterPhysics(dt);
 
-            ball.Position += ball.Velocity;
-            ball.Velocity *= 0.95;
+            if (ActiveBallCount == _targets.Count && _phaseElapsed >= ScatterDuration)
+            {
+                BeginAssemblePhase();
+            }
+        }
 
+        private void UpdateAssemble(double dt)
+        {
+            bool allSettled = true;
+
+            for (int i = 0; i < ActiveBallCount; i++)
+            {
+                Ball ball = _balls[i];
+                Point targetPosition = _targets[i].Position;
+                Vector toTarget = targetPosition - ball.Position;
+
+                ball.Velocity += toTarget * (AssembleSpring * dt);
+                ball.Velocity *= Math.Exp(-AssembleDrag * dt);
+                ball.Position += ball.Velocity * dt;
+
+                if (toTarget.LengthSquared < 0.49 && ball.Velocity.LengthSquared < 9.0)
+                {
+                    ball.Position = targetPosition;
+                    ball.Velocity = new Vector();
+                }
+                else
+                {
+                    allSettled = false;
+                }
+            }
+
+            if (allSettled)
+            {
+                _phase = SimulationPhase.Settled;
+                OnSimulationCompleted?.Invoke();
+            }
+        }
+
+        private void SpawnBalls(double dt)
+        {
+            if (ActiveBallCount >= _targets.Count)
+            {
+                return;
+            }
+
+            double spawnRate = _targets.Count / SpawnDuration;
+            _spawnAccumulator += dt * spawnRate;
+
+            int spawnCount = Math.Max(1, (int)_spawnAccumulator);
+            _spawnAccumulator -= Math.Floor(_spawnAccumulator);
+
+            for (int i = 0; i < spawnCount && ActiveBallCount < _targets.Count; i++)
+            {
+                ActivateBall(ActiveBallCount);
+            }
+        }
+
+        private void ActivateBall(int index)
+        {
+            double angle = _random.NextDouble() * Math.PI * 2.0;
+            double speed = 170.0 + _random.NextDouble() * 310.0;
+            Vector velocity = new(Math.Cos(angle) * speed, Math.Sin(angle) * speed);
+
+            ParticleTarget target = _targets[index];
+            Ball ball = _balls[index];
+            ball.Reset(_center, velocity, _ballRadius, target.Color);
+            ActiveBallCount = index + 1;
+        }
+
+        private void RunScatterPhysics(double dt)
+        {
+            int substeps = Math.Clamp((int)Math.Ceiling(dt / 0.008), 1, 4);
+            double substepDt = dt / substeps;
+
+            for (int step = 0; step < substeps; step++)
+            {
+                for (int i = 0; i < ActiveBallCount; i++)
+                {
+                    Ball ball = _balls[i];
+                    ball.Position += ball.Velocity * substepDt;
+                    ball.Velocity *= Math.Exp(-ScatterDrag * substepDt);
+                    ResolveBoundaryCollision(ball);
+                }
+
+                ResolveBallCollisions();
+            }
+        }
+
+        private void ResolveBoundaryCollision(Ball ball)
+        {
             if (ball.Position.X - ball.Radius <= 0)
             {
                 ball.Position = new Point(ball.Radius, ball.Position.Y);
-                ball.Velocity = new Vector(-ball.Velocity.X, ball.Velocity.Y);
+                ball.Velocity = new Vector(-ball.Velocity.X * BoundaryBounce, ball.Velocity.Y);
             }
             else if (ball.Position.X + ball.Radius >= _width)
             {
                 ball.Position = new Point(_width - ball.Radius, ball.Position.Y);
-                ball.Velocity = new Vector(-ball.Velocity.X, ball.Velocity.Y);
+                ball.Velocity = new Vector(-ball.Velocity.X * BoundaryBounce, ball.Velocity.Y);
             }
 
             if (ball.Position.Y - ball.Radius <= 0)
             {
                 ball.Position = new Point(ball.Position.X, ball.Radius);
-                ball.Velocity = new Vector(ball.Velocity.X, -ball.Velocity.Y);
+                ball.Velocity = new Vector(ball.Velocity.X, -ball.Velocity.Y * BoundaryBounce);
             }
             else if (ball.Position.Y + ball.Radius >= _height)
             {
                 ball.Position = new Point(ball.Position.X, _height - ball.Radius);
-                ball.Velocity = new Vector(ball.Velocity.X, -ball.Velocity.Y);
+                ball.Velocity = new Vector(ball.Velocity.X, -ball.Velocity.Y * BoundaryBounce);
             }
         }
 
-        for (int pass = 0; pass < CollisionPasses; pass++)
+        private void ResolveBallCollisions()
         {
-            for (int i = 0; i < ActiveBallCount; i++)
+            for (int pass = 0; pass < CollisionPasses; pass++)
             {
-                for (int j = i + 1; j < ActiveBallCount; j++)
+                for (int i = 0; i < ActiveBallCount; i++)
                 {
-                    Ball a = _balls[i];
-                    Ball b = _balls[j];
-
-                    Vector delta = b.Position - a.Position;
-                    double distance = delta.Length;
-                    double minDistance = a.Radius + b.Radius;
-
-                    if (distance < minDistance && distance > 0.0001)
+                    for (int j = i + 1; j < ActiveBallCount; j++)
                     {
-                        Vector normal = delta / distance;
-                        double overlap = minDistance - distance;
+                        Ball a = _balls[i];
+                        Ball b = _balls[j];
 
-                        a.Position -= normal * (overlap / 2);
-                        b.Position += normal * (overlap / 2);
+                        Vector delta = b.Position - a.Position;
+                        double distance = delta.Length;
+                        double minDistance = a.Radius + b.Radius;
 
-                        Vector relativeVelocity = b.Velocity - a.Velocity;
-                        double velAlongNormal = Vector.Multiply(relativeVelocity, normal);
-
-                        if (velAlongNormal > 0)
+                        if (distance >= minDistance)
                         {
                             continue;
                         }
 
-                        double impulse = -2.0 * velAlongNormal / 2;
-                        Vector impulseVector = impulse * normal;
+                        if (distance < 0.0001)
+                        {
+                            delta = new Vector(_random.NextDouble() - 0.5, _random.NextDouble() - 0.5);
+                            distance = Math.Max(delta.Length, 0.0001);
+                        }
 
-                        a.Velocity -= impulseVector;
-                        b.Velocity += impulseVector;
+                        Vector normal = delta / distance;
+                        double overlap = minDistance - distance;
+
+                        a.Position -= normal * (overlap * 0.5);
+                        b.Position += normal * (overlap * 0.5);
+
+                        Vector relativeVelocity = b.Velocity - a.Velocity;
+                        double velocityAlongNormal = Vector.Multiply(relativeVelocity, normal);
+                        if (velocityAlongNormal >= 0)
+                        {
+                            continue;
+                        }
+
+                        Vector impulse = normal * velocityAlongNormal;
+                        a.Velocity += impulse;
+                        b.Velocity -= impulse;
                     }
                 }
             }
         }
+
+        private void BeginAssemblePhase()
+        {
+            _phase = SimulationPhase.Assemble;
+            _phaseElapsed = 0;
+
+            if (_overlayFadeRequested)
+            {
+                return;
+            }
+
+            _overlayFadeRequested = true;
+            IsOverlayVisible = false;
+            OnOverlayFadeRequest?.Invoke();
+        }
+
+        private List<ParticleTarget> BuildTargets(BitmapSource image, int ballCount)
+        {
+            FormatConvertedBitmap formattedBitmap = new(image, PixelFormats.Bgra32, null, 0);
+            int width = formattedBitmap.PixelWidth;
+            int height = formattedBitmap.PixelHeight;
+            int stride = width * 4;
+            byte[] pixels = new byte[height * stride];
+            formattedBitmap.CopyPixels(pixels, stride, 0);
+
+            int columnCount = Math.Max(1, (int)Math.Ceiling(Math.Sqrt(ballCount * (_width / _height))));
+            int rowCount = Math.Max(1, (int)Math.Ceiling((double)ballCount / columnCount));
+            double cellWidth = _width / columnCount;
+            double cellHeight = _height / rowCount;
+
+            List<ParticleTarget> targets = new(ballCount);
+
+            for (int index = 0; index < ballCount; index++)
+            {
+                int row = index / columnCount;
+                int column = index % columnCount;
+
+                if (row >= rowCount)
+                {
+                    break;
+                }
+
+                double normalizedX = (column + 0.5) / columnCount;
+                double normalizedY = (row + 0.5) / rowCount;
+                int imageX = Math.Clamp((int)Math.Round(normalizedX * (width - 1)), 0, width - 1);
+                int imageY = Math.Clamp((int)Math.Round(normalizedY * (height - 1)), 0, height - 1);
+                int pixelIndex = imageY * stride + imageX * 4;
+
+                Color color = Colors.White;
+                if (pixelIndex + 3 < pixels.Length)
+                {
+                    color = Color.FromArgb(
+                        pixels[pixelIndex + 3],
+                        pixels[pixelIndex + 2],
+                        pixels[pixelIndex + 1],
+                        pixels[pixelIndex]);
+                }
+
+                targets.Add(new ParticleTarget
+                {
+                    Color = color,
+                    Position = new Point((column + 0.5) * cellWidth, (row + 0.5) * cellHeight)
+                });
+            }
+
+            return targets;
+        }
+
+        private double CalculateBallRadius(int ballCount)
+        {
+            double areaPerParticle = (_width * _height) / Math.Max(ballCount, 1);
+            double radius = Math.Sqrt(areaPerParticle) * 0.28;
+            return Math.Clamp(radius, 1.8, 5.5);
+        }
+
+        private void UpdateFps(double dt)
+        {
+            double instantFps = 1.0 / dt;
+            CurrentFps = (_currentFps * 0.88) + (instantFps * 0.12);
+        }
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+
+        private void OnPropertyChanged(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
     }
-
-    public event PropertyChangedEventHandler? PropertyChanged;
-
-    private void OnPropertyChanged(string propertyName) =>
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 }
