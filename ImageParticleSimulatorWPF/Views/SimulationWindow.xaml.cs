@@ -9,6 +9,7 @@ namespace ImageParticleSimulatorWPF.Views
         public SimulationWindow(BitmapImage image, int ballCount)
         {
             InitializeComponent();
+            ConfigureCanvasSize(image);
 
             Loaded += (s, e) =>
             {
@@ -28,6 +29,25 @@ namespace ImageParticleSimulatorWPF.Views
 
                 DataContext = viewModel;
             };
+        }
+
+        private void ConfigureCanvasSize(BitmapSource image)
+        {
+            Rect workArea = SystemParameters.WorkArea;
+            double maxWidth = workArea.Width * 0.82;
+            double maxHeight = workArea.Height * 0.78;
+
+            double scale = Math.Min(maxWidth / image.PixelWidth, maxHeight / image.PixelHeight);
+            scale = Math.Min(scale, 1.0);
+            scale = Math.Max(scale, 0.35);
+
+            double canvasWidth = Math.Max(320, image.PixelWidth * scale);
+            double canvasHeight = Math.Max(220, image.PixelHeight * scale);
+
+            BallCanvas.Width = canvasWidth;
+            BallCanvas.Height = canvasHeight;
+            Width = canvasWidth + 44;
+            Height = canvasHeight + 72;
         }
 
         private void OverlayFadeOut()
