@@ -84,6 +84,42 @@
                            Margin="0 0 0 20"
                            TextAlignment="Center"/>
 
+                <Border Width="280"
+                        Margin="0 0 0 18"
+                        Padding="16"
+                        Background="#383838"
+                        CornerRadius="12">
+                    <StackPanel>
+                        <TextBlock Text="Particle Count"
+                                   FontSize="14"
+                                   FontWeight="SemiBold"
+                                   Foreground="White"/>
+                        <TextBlock Text="Higher counts make the final image denser, but take more work to animate."
+                                   Margin="0 4 0 12"
+                                   TextWrapping="Wrap"
+                                   Foreground="#c9c9c9"
+                                   FontSize="11"/>
+                        <Slider Minimum="300"
+                                Maximum="5000"
+                                TickFrequency="100"
+                                Value="{Binding BallCount, Mode=TwoWay}"
+                                Foreground="#60a5fa"/>
+                        <DockPanel Margin="0 10 0 0">
+                            <TextBlock Text="Selected:"
+                                       Foreground="#c9c9c9"
+                                       VerticalAlignment="Center"/>
+                            <Border DockPanel.Dock="Right"
+                                    Padding="10 4"
+                                    Background="#1f2937"
+                                    CornerRadius="999">
+                                <TextBlock Text="{Binding BallCount}"
+                                           Foreground="White"
+                                           FontWeight="SemiBold"/>
+                            </Border>
+                        </DockPanel>
+                    </StackPanel>
+                </Border>
+
                 <Button Content="Upload Image"
                         Command="{Binding UploadImageCommand}"
                         Style="{StaticResource FancyButton}"

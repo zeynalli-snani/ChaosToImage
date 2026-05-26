@@ -6,13 +6,13 @@ namespace ImageParticleSimulatorWPF.Views
 {
     public partial class SimulationWindow : Window
     {
-        public SimulationWindow(BitmapImage image)
+        public SimulationWindow(BitmapImage image, int ballCount)
         {
             InitializeComponent();
 
             Loaded += (s, e) =>
             {
-                var viewModel = new SimulationViewModel(BallCanvas.ActualWidth, BallCanvas.ActualHeight, 1790, image);
+                var viewModel = new SimulationViewModel(BallCanvas.ActualWidth, BallCanvas.ActualHeight, ballCount, image);
                 viewModel.OnOverlayFadeRequest = OverlayFadeOut;
                 viewModel.OnFrameUpdated = () => BallCanvas.InvalidateVisual();
                 Overlay.Opacity = 0;

@@ -15,8 +15,14 @@ namespace ImageParticleSimulatorWPF.ViewModels
 {
     public class MainViewModel : INotifyPropertyChanged
     {
-        private BitmapImage _uploadedImage;
-        public BitmapImage UploadedImage
+        private const int DefaultBallCount = 1800;
+        private const int MinBallCount = 300;
+        private const int MaxBallCount = 5000;
+
+        private BitmapImage? _uploadedImage;
+        private int _ballCount = DefaultBallCount;
+
+        public BitmapImage? UploadedImage
         {
             get => _uploadedImage;
             set
@@ -24,6 +30,20 @@ namespace ImageParticleSimulatorWPF.ViewModels
                 _uploadedImage = value;
                 OnPropertyChanged(nameof(UploadedImage));
                 (StartSimulationCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            }
+        }
+
+        public int BallCount
+        {
+            get => _ballCount;
+            set
+            {
+                int clampedValue = Math.Clamp(value, MinBallCount, MaxBallCount);
+                if (_ballCount != clampedValue)
+                {
+                    _ballCount = clampedValue;
+                    OnPropertyChanged(nameof(BallCount));
+                }
             }
         }
 
@@ -91,11 +111,16 @@ namespace ImageParticleSimulatorWPF.ViewModels
 
         private void StartSimulation()
         {
-            var simWindow = new SimulationWindow(UploadedImage);
+            if (UploadedImage is null)
+            {
+                return;
+            }
+
+            var simWindow = new SimulationWindow(UploadedImage, BallCount);
             simWindow.Show();
         }
 
-        public event PropertyChangedEventHandler PropertyChanged;
+        public event PropertyChangedEventHandler? PropertyChanged;
         private void OnPropertyChanged(string propertyName) =>
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
