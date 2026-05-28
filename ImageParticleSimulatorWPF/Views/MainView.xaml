@@ -93,7 +93,7 @@
                                FontSize="28"
                                FontWeight="Bold"
                                Foreground="White"/>
-                    <TextBlock Text="Upload an image, tune the particle count, and launch a smoother animation without hunting for hidden buttons."
+                    <TextBlock Text="Upload an image, tune the particle count, and launch the magic."
                                Margin="0 8 0 0"
                                FontSize="13"
                                Foreground="#cbd5e1"
@@ -124,8 +124,9 @@
                                            Foreground="White"/>
                                 <Border DockPanel.Dock="Right"
                                         Padding="10 4"
+                                        Margin="2 2 2 2" 
                                         Background="#1e293b"
-                                        CornerRadius="999">
+                                        CornerRadius="12">
                                     <TextBlock Text="{Binding BallCount, StringFormat={}Particles: {0}}"
                                                Foreground="#dbeafe"
                                                FontSize="12"
@@ -191,18 +192,18 @@
                                     <TextBlock Text="Settings"
                                                FontSize="18"
                                                FontWeight="SemiBold"
-                                               Foreground="White"/>
+                                               Foreground="White" Height="26"/>
 
-                                    <Border Margin="0 18 0 0"
+                                    <Border
                                             Padding="18"
                                             Background="#1f2937"
-                                            CornerRadius="14">
+                                            CornerRadius="14" Height="169">
                                         <StackPanel>
                                             <TextBlock Text="Particle Count"
                                                        FontSize="15"
                                                        FontWeight="SemiBold"
                                                        Foreground="White"/>
-                                            <TextBlock Text="More particles improve image detail. Lower values stay lighter and can record more smoothly on weaker machines."
+                                            <TextBlock Text="More particles improve image detail. Lower values stay lighter and can run more smoothly."
                                                        Margin="0 6 0 12"
                                                        TextWrapping="Wrap"
                                                        Foreground="#cbd5e1"
@@ -214,14 +215,15 @@
                                                     Value="{Binding BallCount, Mode=TwoWay}"
                                                     Foreground="#60a5fa"/>
                                             <DockPanel Margin="0 12 0 0">
-                                                <TextBlock Text="Recommended: 1200-2200"
+                                                <TextBlock Text="Recommended: 1200-1500"
                                                            Foreground="#94a3b8"
                                                            FontSize="11"
                                                            VerticalAlignment="Center"/>
                                                 <Border DockPanel.Dock="Right"
                                                         Padding="12 5"
+                                                        Margin="2 2 2 2"
                                                         Background="#0f172a"
-                                                        CornerRadius="999">
+                                                        CornerRadius="22">
                                                     <TextBlock Text="{Binding BallCount}"
                                                                Foreground="White"
                                                                FontWeight="SemiBold"/>
@@ -229,17 +231,16 @@
                                             </DockPanel>
                                         </StackPanel>
                                     </Border>
-
-                                    <Border Margin="0 16 0 0"
+                                    <Border
                                             Padding="18"
                                             Background="#1f2937"
-                                            CornerRadius="14">
+                                            CornerRadius="14" Height="111">
                                         <StackPanel>
                                             <TextBlock Text="Flow"
                                                        FontSize="15"
                                                        FontWeight="SemiBold"
                                                        Foreground="White"/>
-                                            <TextBlock Text="1. Upload your image&#x0a;2. Adjust particle count&#x0a;3. Start the simulation"
+                                            <TextBlock Text="1. Upload your image&#xA;2. Adjust particle count&#xA;3. Start the simulation"
                                                        Margin="0 8 0 0"
                                                        Foreground="#cbd5e1"
                                                        FontSize="12"/>
@@ -249,7 +250,7 @@
                             </ScrollViewer>
 
                             <Border Grid.Row="1"
-                                    Margin="0 18 0 0"
+                                    Margin="0 2 0 14"
                                     Padding="16"
                                     Background="#0f172a"
                                     CornerRadius="14">
@@ -265,7 +266,7 @@
                                             Command="{Binding UploadImageCommand}"
                                             Style="{StaticResource FancyButton}"/>
                                     <Button Grid.Column="1"
-                                            Margin="8 0 0 0"
+                                            Margin="0 0 0 0"
                                             Content="Start Simulation"
                                             Command="{Binding StartSimulationCommand}"
                                             Style="{StaticResource FancyButton}"
