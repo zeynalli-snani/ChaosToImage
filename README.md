@@ -36,11 +36,7 @@ $$impulse = \frac{-2.0 \cdot \text{relativeVelocity} \cdot \text{normal}}{2}$$
 ### Image-to-Particle Mapping
 During the recording phase, the application samples the `WriteableBitmap` of the source image. It maps the spatial coordinates of each particle to the nearest pixel to extract ARGB data, which is then stored in a `BallData` model for the assembly phase.
 
-## ⚙️ Getting Started
-
 ---
-
-Follow these steps to set up the project locally.
 
 ## 📥 Download & Run (No Installation Required)
 You can download the compiled version of the app to try it instantly without needing Visual Studio:
@@ -54,7 +50,11 @@ You can download the compiled version of the app to try it instantly without nee
 > 
 > **To run the app:** Click **"More info"** and then select **"Run anyway"**.
 
-## Download for Development
+## ⚙️ Getting Started
+
+---
+
+Follow these steps to set up the project locally.
 ### Prerequisites
 * [.NET 8 SDK](https://dotnet.microsoft.com/en-us/download)
 * Visual Studio 2022 or another editor with WPF support
