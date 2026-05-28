@@ -18,6 +18,7 @@ public class SimulationViewModel : INotifyPropertyChanged
 {
     private const double AreaFillRatio = 0.72;
     private const int CollisionPasses = 3;
+    private const double MinCellSize = 24.0;
 
     private readonly List<Ball> _balls;
     private readonly DispatcherTimer _timer;
@@ -27,6 +28,9 @@ public class SimulationViewModel : INotifyPropertyChanged
     private readonly double _width;
     private readonly double _height;
     private readonly double _ballRadius;
+    private readonly double _cellSize;
+    private readonly int _gridColumns;
+    private readonly int _gridRows;
     private readonly BitmapImage _image;
     private readonly List<BallData> _recordedData = new();
 
@@ -77,6 +81,9 @@ public class SimulationViewModel : INotifyPropertyChanged
         _center = new Point(width / 2, height / 2);
         _totalBallsToFire = ballCount;
         _ballRadius = CalculateBallRadius(ballCount);
+        _cellSize = Math.Max(MinCellSize, _ballRadius * 4.0);
+        _gridColumns = Math.Max(1, (int)Math.Ceiling(_width / _cellSize));
+        _gridRows = Math.Max(1, (int)Math.Ceiling(_height / _cellSize));
         _balls = new List<Ball>(ballCount);
 
         for (int i = 0; i < ballCount; i++)
@@ -252,43 +259,104 @@ public class SimulationViewModel : INotifyPropertyChanged
 
         for (int pass = 0; pass < CollisionPasses; pass++)
         {
-            for (int i = 0; i < ActiveBallCount; i++)
+            List<int>[,] grid = BuildSpatialGrid();
+
+            for (int y = 0; y < _gridRows; y++)
             {
-                for (int j = i + 1; j < ActiveBallCount; j++)
+                for (int x = 0; x < _gridColumns; x++)
                 {
-                    Ball a = _balls[i];
-                    Ball b = _balls[j];
-
-                    Vector delta = b.Position - a.Position;
-                    double distance = delta.Length;
-                    double minDistance = a.Radius + b.Radius;
-
-                    if (distance < minDistance && distance > 0.0001)
+                    List<int>? cell = grid[x, y];
+                    if (cell is null || cell.Count == 0)
                     {
-                        Vector normal = delta / distance;
-                        double overlap = minDistance - distance;
+                        continue;
+                    }
 
-                        a.Position -= normal * (overlap / 2);
-                        b.Position += normal * (overlap / 2);
-
-                        Vector relativeVelocity = b.Velocity - a.Velocity;
-                        double velAlongNormal = Vector.Multiply(relativeVelocity, normal);
-
-                        if (velAlongNormal > 0)
-                        {
-                            continue;
-                        }
-
-                        double impulse = -2.0 * velAlongNormal / 2;
-                        Vector impulseVector = impulse * normal;
-
-                        a.Velocity -= impulseVector;
-                        b.Velocity += impulseVector;
+                    foreach (int ballIndex in cell)
+                    {
+                        ResolveNearbyCollisions(ballIndex, x, y, grid);
                     }
                 }
             }
         }
     }
+
+    private List<int>[,] BuildSpatialGrid()
+    {
+        List<int>[,] grid = new List<int>[_gridColumns, _gridRows];
+
+        for (int i = 0; i < ActiveBallCount; i++)
+        {
+            Ball ball = _balls[i];
+            int cellX = GetCellX(ball.Position.X);
+            int cellY = GetCellY(ball.Position.Y);
+
+            grid[cellX, cellY] ??= new List<int>(8);
+            grid[cellX, cellY]!.Add(i);
+        }
+
+        return grid;
+    }
+
+    private void ResolveNearbyCollisions(int ballIndex, int cellX, int cellY, List<int>[,] grid)
+    {
+        Ball a = _balls[ballIndex];
+
+        for (int neighborY = Math.Max(0, cellY - 1); neighborY <= Math.Min(_gridRows - 1, cellY + 1); neighborY++)
+        {
+            for (int neighborX = Math.Max(0, cellX - 1); neighborX <= Math.Min(_gridColumns - 1, cellX + 1); neighborX++)
+            {
+                List<int>? neighborCell = grid[neighborX, neighborY];
+                if (neighborCell is null)
+                {
+                    continue;
+                }
+
+                foreach (int otherIndex in neighborCell)
+                {
+                    if (otherIndex <= ballIndex)
+                    {
+                        continue;
+                    }
+
+                    Ball b = _balls[otherIndex];
+                    Vector delta = b.Position - a.Position;
+                    double distanceSquared = delta.X * delta.X + delta.Y * delta.Y;
+                    double minDistance = a.Radius + b.Radius;
+                    double minDistanceSquared = minDistance * minDistance;
+
+                    if (distanceSquared >= minDistanceSquared || distanceSquared <= 0.0000001)
+                    {
+                        continue;
+                    }
+
+                    double distance = Math.Sqrt(distanceSquared);
+                    Vector normal = delta / distance;
+                    double overlap = minDistance - distance;
+
+                    a.Position -= normal * (overlap / 2);
+                    b.Position += normal * (overlap / 2);
+
+                    Vector relativeVelocity = b.Velocity - a.Velocity;
+                    double velAlongNormal = Vector.Multiply(relativeVelocity, normal);
+
+                    if (velAlongNormal > 0)
+                    {
+                        continue;
+                    }
+
+                    double impulse = -2.0 * velAlongNormal / 2;
+                    Vector impulseVector = impulse * normal;
+
+                    a.Velocity -= impulseVector;
+                    b.Velocity += impulseVector;
+                }
+            }
+        }
+    }
+
+    private int GetCellX(double x) => Math.Clamp((int)(x / _cellSize), 0, _gridColumns - 1);
+
+    private int GetCellY(double y) => Math.Clamp((int)(y / _cellSize), 0, _gridRows - 1);
 
     private double CalculateBallRadius(int ballCount)
     {
