@@ -95,7 +95,7 @@ public class SimulationViewModel : INotifyPropertyChanged
         _timer.Tick += Tick;
         _timer.Start();
 
-        _stopTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
+        _stopTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(7) };
         _stopTimer.Tick += StopTimerTick;
     }
 
