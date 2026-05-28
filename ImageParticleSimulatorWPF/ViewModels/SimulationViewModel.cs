@@ -22,6 +22,7 @@ public class SimulationViewModel : INotifyPropertyChanged
 
     private readonly List<Ball> _balls;
     private readonly DispatcherTimer _timer;
+    private readonly DispatcherTimer _stopTimer;
     private readonly Random _rand = new();
     private readonly Point _center;
     private readonly double _width;
@@ -33,6 +34,7 @@ public class SimulationViewModel : INotifyPropertyChanged
     private readonly BitmapImage _image;
     private readonly List<BallData> _recordedData = new();
 
+    private bool _stopTimerStarted;
     private int _totalBallsToFire;
     private int _ballsFired;
     private int _spawnTickCounter = 1;
@@ -92,6 +94,9 @@ public class SimulationViewModel : INotifyPropertyChanged
         _timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
         _timer.Tick += Tick;
         _timer.Start();
+
+        _stopTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
+        _stopTimer.Tick += StopTimerTick;
     }
 
     private void Tick(object? sender, EventArgs e)
@@ -107,19 +112,40 @@ public class SimulationViewModel : INotifyPropertyChanged
             _spawnTickCounter++;
             UpdateBalls();
 
-            if (_ballsFired >= _totalBallsToFire)
+            if (_ballsFired >= _totalBallsToFire && !_stopTimerStarted)
             {
-                AssignColorsFromImage();
-                PrepareReplay();
+                _stopTimerStarted = true;
+                _stopTimer.Start();
             }
         }
         else
         {
             ReplayBalls();
             UpdateBalls();
+
+            if (_ballsFired >= _recordedData.Count && !_stopTimerStarted)
+            {
+                _stopTimerStarted = true;
+                _stopTimer.Start();
+            }
         }
 
         OnFrameUpdated?.Invoke();
+    }
+
+    private void StopTimerTick(object? sender, EventArgs e)
+    {
+        _stopTimer.Stop();
+
+        if (_isRecordingPhase)
+        {
+            AssignColorsFromImage();
+            PrepareReplay();
+        }
+        else
+        {
+            _timer.Stop();
+        }
     }
 
     private void FireNewBall()
@@ -179,6 +205,7 @@ public class SimulationViewModel : INotifyPropertyChanged
         OnOverlayFadeRequest?.Invoke();
         _isRecordingPhase = false;
         _ballsFired = 0;
+        _stopTimerStarted = false;
         _spawnTickCounter = 1;
         ActiveBallCount = 0;
     }
