@@ -12,7 +12,6 @@ public class BallData
     public Vector InitialVelocity { get; set; }
     public Color Color { get; set; }
     public Point FinalPosition { get; set; }
-    public double Radius { get; set; }
 }
 
 public class SimulationViewModel : INotifyPropertyChanged
@@ -20,11 +19,6 @@ public class SimulationViewModel : INotifyPropertyChanged
     private const double AreaFillRatio = 0.72;
     private const int CollisionPasses = 3;
     private const double MinCellSize = 24.0;
-    private const double WaveOneShare = 0.5;
-    private const double WaveTwoShare = 0.3;
-    private const double WaveOneScale = 1.0;
-    private const double WaveTwoScale = 0.5;
-    private const double WaveThreeScale = 0.2;
 
     private readonly List<Ball> _balls;
     private readonly DispatcherTimer _timer;
@@ -39,8 +33,6 @@ public class SimulationViewModel : INotifyPropertyChanged
     private readonly int _gridRows;
     private readonly BitmapImage _image;
     private readonly List<BallData> _recordedData = new();
-    private readonly int _waveOneCount;
-    private readonly int _waveTwoCount;
 
     private bool _stopTimerStarted;
     private int _totalBallsToFire;
@@ -92,8 +84,6 @@ public class SimulationViewModel : INotifyPropertyChanged
         _cellSize = Math.Max(MinCellSize, _ballRadius * 4.0);
         _gridColumns = Math.Max(1, (int)Math.Ceiling(_width / _cellSize));
         _gridRows = Math.Max(1, (int)Math.Ceiling(_height / _cellSize));
-        _waveOneCount = (int)Math.Ceiling(ballCount * WaveOneShare);
-        _waveTwoCount = (int)Math.Ceiling(ballCount * WaveTwoShare);
         _balls = new List<Ball>(ballCount);
 
         for (int i = 0; i < ballCount; i++)
@@ -164,10 +154,9 @@ public class SimulationViewModel : INotifyPropertyChanged
         double progress = (double)_ballsFired / _totalBallsToFire;
         double speed = 18.0 * (1.0 - progress) + 2.0 * progress;
         Vector velocity = new Vector(Math.Cos(angle), Math.Sin(angle)) * speed;
-        double radius = GetBallRadiusForIndex(_ballsFired);
 
         Ball ball = _balls[_ballsFired];
-        ball.Reset(_center, velocity, radius, Colors.White);
+        ball.Reset(_center, velocity, _ballRadius, Colors.White);
         ActiveBallCount = Math.Max(ActiveBallCount, _ballsFired + 1);
     }
 
@@ -205,8 +194,7 @@ public class SimulationViewModel : INotifyPropertyChanged
             {
                 InitialVelocity = ball.FiredVelocity,
                 FinalPosition = ball.Position,
-                Color = color,
-                Radius = ball.Radius
+                Color = color
             });
         }
     }
@@ -229,7 +217,7 @@ public class SimulationViewModel : INotifyPropertyChanged
             BallData data = _recordedData[_ballsFired];
             Ball ball = _balls[_ballsFired];
 
-            ball.Reset(_center, data.InitialVelocity, data.Radius, data.Color);
+            ball.Reset(_center, data.InitialVelocity, _ballRadius, data.Color);
             _ballsFired++;
         }
 
@@ -375,21 +363,6 @@ public class SimulationViewModel : INotifyPropertyChanged
         double usableArea = _width * _height * AreaFillRatio;
         double radius = Math.Sqrt(usableArea / (Math.Max(ballCount, 1) * Math.PI));
         return Math.Clamp(radius, 1.2, 12.0);
-    }
-
-    private double GetBallRadiusForIndex(int ballIndex)
-    {
-        if (ballIndex < _waveOneCount)
-        {
-            return _ballRadius * WaveOneScale;
-        }
-
-        if (ballIndex < _waveOneCount + _waveTwoCount)
-        {
-            return _ballRadius * WaveTwoScale;
-        }
-
-        return _ballRadius * WaveThreeScale;
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
