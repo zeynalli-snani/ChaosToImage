@@ -9,11 +9,14 @@ A Windows WPF app that turns an uploaded image into a particle-based "magic" ani
 ## 📝 Description
 Image Particle Simulator is a desktop application built with WPF and .NET 8 that animates an uploaded image using a swarm of particles. It is designed for people who want a visually interesting image-to-particle effect with a simple upload-and-play workflow, while still giving control over particle density.
 
-### ✨ Key Features
-* **Image Upload:** Load a PNG or JPG and preview it before starting the simulation.
-* **Particle Count Control:** Adjust how many particles are used so you can balance visual density and performance.
-* **Magic-Style Simulation:** Launch a random, chaotic particle burst that assembles into the uploaded image.
+![Simulation Preview](./ImageParticleSimulatorWPF/res/preview2.gif)
 
+
+### ✨ Key Features & Technical Highlights
+* **Impulse-Based Physics Engine:** A custom-built 2D collision resolution system handling particle-to-particle and particle-to-boundary interactions.
+* **Recording & Replay Logic:** Implements a "Recording Phase" to capture final positions and an "Assembly Phase" that uses inverted physics to reconstruct the image.
+* **High-Performance Rendering:** Optimized for .NET 8 using `WriteableBitmap` and asynchronous processing to maintain fluid UI frame rates even at high particle densities.
+* **Dynamic Radius Calculation:** Uses an Area Fill Ratio algorithm to automatically scale particle sizes based on the count and canvas dimensions.
 ---
 
 ## 🛠️ Built With
@@ -24,7 +27,18 @@ Image Particle Simulator is a desktop application built with WPF and .NET 8 that
 
 ---
 
+## 🧠 Technical Deep Dive
+
+### Collision Resolution
+The simulator uses a sub-stepping approach for physics calculations (`CollisionPasses = 3`) to ensure stability during high-velocity bursts. It implements impulse-based momentum exchange:
+$$impulse = \frac{-2.0 \cdot \text{relativeVelocity} \cdot \text{normal}}{2}$$
+
+### Image-to-Particle Mapping
+During the recording phase, the application samples the `WriteableBitmap` of the source image. It maps the spatial coordinates of each particle to the nearest pixel to extract ARGB data, which is then stored in a `BallData` model for the assembly phase.
+
 ## ⚙️ Getting Started
+
+---
 
 Follow these steps to set up the project locally.
 
@@ -57,12 +71,12 @@ dotnet --version
 ---
 
 ## 🚀 Usage
-Use the app by uploading an image, setting the particle count, and starting the simulation.
 
-### Running Locally
-```bash
-dotnet run
-```
+1. **Load Image:** Click the "Upload" button to select a local file.
+2. **Configure Swarm:** Use the slider to set the particle count (optimized for up to 5,000 particles).
+3. **Run Simulation:**
+   - **Phase 1:** Particles are fired from the center with random velocities.
+   - **Phase 2:** After 5 seconds, particles "seek" their original image positions using stored velocity vectors to recreate the image.
 
 ---
 
@@ -81,7 +95,3 @@ Contributions make the open-source community an amazing place.
 Distributed under the MIT License. See `LICENSE.txt` for more information.
 
 ---
-
-## 📬 Contact
-* **Project:** Image Particle Simulator
-* **Repository:** Add your GitHub repository URL here
