@@ -42,6 +42,19 @@ During the recording phase, the application samples the `WriteableBitmap` of the
 
 Follow these steps to set up the project locally.
 
+## 📥 Download & Run (No Installation Required)
+You can download the compiled version of the app to try it instantly without needing Visual Studio:
+
+1. Go to the [Releases](https://github.com/zeynalli-snani/ChaosToImage/releases) page.
+2. Download the `ChaosToImage_Windows.zip` file.
+3. Extract the folder and run `ChaosToImage.exe`.
+
+> [!IMPORTANT]  
+> **Windows SmartScreen Note:** Since this is an unsigned open-source project, Windows may show a "Windows protected your PC" warning when you first launch the `.exe`. 
+> 
+> **To run the app:** Click **"More info"** and then select **"Run anyway"**.
+
+## Download for Development
 ### Prerequisites
 * [.NET 8 SDK](https://dotnet.microsoft.com/en-us/download)
 * Visual Studio 2022 or another editor with WPF support
