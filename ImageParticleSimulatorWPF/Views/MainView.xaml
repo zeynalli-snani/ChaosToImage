@@ -215,7 +215,7 @@
                                                     Value="{Binding BallCount, Mode=TwoWay}"
                                                     Foreground="#60a5fa"/>
                                             <DockPanel Margin="0 12 0 0">
-                                                <TextBlock Text="Recommended: 1800-3000"
+                                                <TextBlock Text="Recommended: 1200-1500"
                                                            Foreground="#94a3b8"
                                                            FontSize="11"
                                                            VerticalAlignment="Center"/>
