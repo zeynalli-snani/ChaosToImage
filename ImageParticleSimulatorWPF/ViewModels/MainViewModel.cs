@@ -15,7 +15,7 @@ namespace ImageParticleSimulatorWPF.ViewModels
 {
     public class MainViewModel : INotifyPropertyChanged
     {
-        private const int DefaultBallCount = 1200;
+        private const int DefaultBallCount = 2000;
         private const int MinBallCount = 300;
         private const int MaxBallCount = 5000;
 
